@@ -1,7 +1,7 @@
 import scrapy
 # from tutorial.items import TutorialItem
 from tutorial.items import DramaItem
-
+from scrapy.http import HtmlResponse
 class dramaSpider(scrapy.Spider):
     name = "drama"
 
@@ -57,20 +57,39 @@ class dramaSpider(scrapy.Spider):
         #     yield scrapy.Request(next_page, callback=self.parse)
 
     def parse(self, response):
+        # htmlResponse = HtmlResponse(url = response.url, body = response.body)
+        # print(htmlResponse.encoding)
+        # response.body.decode("gbk")
         for quote in response.css('div.cn_box2'):
             href = quote.css('.bor_img3_right a::attr(href)').extract_first()
-            img_src = quote.css('img::attr(src)').extract_first()
-
-            profile = quote.css('ul li')
-            title_cn = profile.css(':nth-child(1)::text').extract_first()
-            title_en = profile.css(':nth-child(2) font:last-child::text').extract_first()
-            tv = profile.css(':nth-child(3) font:last-child::text').extract_first()
-            year = profile.css(':nth-child(6) font:last-child::text').extract_first()
-            plot = profile.css(':nth-child(7) font:last-child::text').extract_first()
-            yield DramaItem(href = href, img_src = img_src, title_cn = title_cn, title_en = title_en, tv = tv, year = year, plot = plot)
+            yield scrapy.Request(response.urljoin(href), callback = self.parse_drama)
 
         next_page = response.css('div.page a:nth-last-child(2)::attr(href)').extract_first()
         if next_page is not None:
             next_page = response.urljoin(next_page)
-            print('***************Next page is ', next_page)
-            yield scrapy.Request(next_page, callback=self.parse)
+            # print('***************Next page is ', next_page)
+            yield scrapy.Request(next_page, callback = self.parse)
+
+        def parse_drama(self, response):
+            def extract_with_css(query):
+                return response.css(query).extract_first()
+
+            img_src = response.css('div.o_big_img_bg_b img::attr(src)').extract_first()
+            profile = response.css('div.o_r_contact ul').extract_first()
+            title_en = profile.css('li:nth-child(2)::text').extract_first()
+            title_cn = profile.css('li:nth-child(3)::text').extract_first()
+            debut_date = profile.css('li:nth-child(7)::text').extract_first()
+            plot = profile.css('li:nth-child(9)::text').extract_first()
+            nation = profile.css('li:nth-child(10) label:nth-child(1)::text').extract_first()
+            tv = profile.css('li:nth-child(10) label:nth-child(2)::text').extract_first()
+            hot = profile.css('li:nth-child(11) label:nth-child(1)::text').extract_first()
+            length = profile.css('li:nth-child(11) label:nth-child(2)::text').extract_first()
+            category = profile.css('li:nth-child(12) label:nth-child(2)::text').extract_first()
+            script_writers = profile.css('div.o_r_contact ul').css('li:nth-child(4) a::text')
+            directors = profile.css('div.o_r_contact ul').css('li:nth-child(5) a::text')
+            actors = profile.css('div.o_r_contact ul').css('li:nth-child(6) a::text')
+
+
+
+            yield DramaItem(img_src = img_src, title_cn = title_cn, title_en = title_en, tv = tv, year = year, plot = plot)
+           

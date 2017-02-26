@@ -16,7 +16,6 @@ class TutorialItem(scrapy.Item):
     tags = scrapy.Field()
 
 class DramaItem(scrapy.Item):
-	href = scrapy.Field()
 	img_src = scrapy.Field()
 	title_cn = scrapy.Field()
 	title_en = scrapy.Field()

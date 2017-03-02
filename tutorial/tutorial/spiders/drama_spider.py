@@ -58,5 +58,5 @@ class DramaSpider(scrapy.Spider):
                 script_writers = script_writers, directors = directors, actors = actors, 
                 average_score = average_score, star5_num = star5_num, star4_num = star4_num, 
                 star3_num = star3_num, star2_num = star2_num, star1_num = star1_num
-            )
+        )
            

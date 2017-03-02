@@ -136,3 +136,6 @@ USER_AGENT_LIST=[
     "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/535.24 (KHTML, like Gecko) Chrome/19.0.1055.1 Safari/535.24",
     "Mozilla/5.0 (Windows NT 6.2; WOW64) AppleWebKit/535.24 (KHTML, like Gecko) Chrome/19.0.1055.1 Safari/535.24"
 ]
+
+# FEED_URI=u'/Users/apple/Desktop/douban-top250.csv'
+# FEED_FORMAT='CSV'

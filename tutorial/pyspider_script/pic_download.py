@@ -28,10 +28,20 @@ USER_AGENT_LIST = [
     "Mozilla/5.0 (Windows NT 6.2; WOW64) AppleWebKit/535.24 (KHTML, like Gecko) Chrome/19.0.1055.1 Safari/535.24"
 ]
 
-DIR_PATH = 'g:/img'
+DIR_PATH = 'C:/img'
 
 class Handler(BaseHandler):
     crawl_config = {
+    }
+    
+    headers = {
+         "Accept-Encoding":"gzip, deflate, sdch",
+         "Accept-Language":"zh-CN,zh;q=0.8",
+         "Cache-Control":"no-cache",
+         "Host":"www.meijutt.com",
+         "Pragma":"no-cache",
+         "Referer":"http://www.meijutt.com",
+         "Upgrade-Insecure-Requests":1
     }
 
     def __init__(self):
@@ -46,16 +56,8 @@ class Handler(BaseHandler):
     @config(age=10 * 24 * 60 * 60)
     def index_page(self, response):
         for each in response.doc('.cn_box2 .bor_img3_right a[href^="http"]').items():
-            self.crawl(each.attr.href, callback = self.detail_page, fetch_type = 'js', headers = {
-                "User-Agent" : random.choice(USER_AGENT_LIST),
-                "Accept-Encoding":"gzip, deflate, sdch",
-                "Accept-Language":"zh-CN,zh;q=0.8",
-                "Cache-Control":"no-cache",
-                "Host":"www.meijutt.com",
-                "Pragma":"no-cache",
-                "Referer":"http://www.meijutt.com",
-                "Upgrade-Insecure-Requests":1
-            })
+            self.headers['User-Agent'] = random.choice(USER_AGENT_LIST)
+            self.crawl(each.attr.href, callback = self.detail_page, fetch_type = 'js', headers = self.headers)
             
         self.crawl(response.doc('div.page a:nth-last-child(2)').attr.href, callback = self.index_page)
         
@@ -65,10 +67,10 @@ class Handler(BaseHandler):
         file_src_parts = img_src.split('/')
         file_parent_root = file_src_parts[-2]
         file_name = file_src_parts[-1]
-		
+        
+        self.headers['User-Agent'] = random.choice(USER_AGENT_LIST)
         self.crawl(img_src, callback = self.save_img, save={'file_parent_root': file_parent_root, 'file_name': file_name}, headers = {
-            "User-Agent" : random.choice(USER_AGENT_LIST),
-            "Accept":"image/webp,image/*,*/*;q=0.8",
+            'Accept':"image/webp,image/*,*/*;q=0.8",
             "Accept-Encoding":"gzip, deflate, sdch",
             "Cache-Control":"no-cache",
             "Host":"img.kukan5.com:808",
@@ -82,8 +84,10 @@ class Handler(BaseHandler):
     
     
     def save_img(self, response):
-        file_parent_root = self.io_util.mkDir(response.save['file_parent_root'])
+        file_parent_root = response.save['file_parent_root']
+        self.io_util.mkDir(file_parent_root)
         file_path = file_parent_root + '/' + response.save['file_name']
+        print(file_path)
         self.io_util.save(response.content, file_path)
 		
     
@@ -102,12 +106,10 @@ class IOUtil(object):
 
         if not os.path.exists(dir_path):
             os.makedirs(dir_path)
-            return dir_path
-        else:
-            return dir_path
 
     def save(self, content, path):
-        f = open(path, 'wb')
+        absolute_path = self.path + path
+        f = open(absolute_path, 'wb')
         f.write(content)
         f.close()
 

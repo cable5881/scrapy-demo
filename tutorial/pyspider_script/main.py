@@ -5,8 +5,8 @@
 
 from pyspider.libs.base_handler import *
 from pymongo import MongoClient
-
 import random
+import os
 
 USER_AGENT_LIST = [
     "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.1 (KHTML, like Gecko) Chrome/22.0.1207.1 Safari/537.1",
@@ -29,32 +29,65 @@ USER_AGENT_LIST = [
     "Mozilla/5.0 (Windows NT 6.2; WOW64) AppleWebKit/535.24 (KHTML, like Gecko) Chrome/19.0.1055.1 Safari/535.24"
 ]
 
+DIR_PATH = 'g:/img'
+
 client = MongoClient("mongodb://112.74.44.140:27017")
 db = client['drama']
 
 class Handler(BaseHandler):
     crawl_config = {
     }
+    
+    headers = {
+        "Accept-Encoding":"gzip, deflate, sdch",
+        "Accept-Language":"zh-CN,zh;q=0.8",
+        "Cache-Control":"no-cache",
+        "Host":"www.meijutt.com",
+        "Pragma":"no-cache",
+        "Referer":"http://www.meijutt.com",
+        "Upgrade-Insecure-Requests":1
+    }
 
+    def __init__(self):
+        self.base_url = 'http://www.meijutt.com/file/list1.html'
+        self.io_util = IOUtil()
+    
     # @every(minutes=24 * 60)
     def on_start(self):
-        self.crawl('http://www.meijutt.com/file/list1.html', callback = self.index_page)
+        self.crawl('http://www.meijutt.com/file/list1.html', callback = self.index_page, headers = self.headers)
 
     # 10 days
     @config(age=10 * 24 * 60 * 60)
     def index_page(self, response):
         for each in response.doc('.cn_box2 .bor_img3_right a[href^="http"]').items():
-            self.crawl(each.attr.href, callback = self.detail_page, fetch_type = 'js', headers = {"User-Agent" : random.choice(USER_AGENT_LIST)})
+            self.headers['User-Agent'] = random.choice(USER_AGENT_LIST)
+            self.crawl(each.attr.href, callback = self.detail_page, fetch_type = 'js', headers = self.headers)
             
-        self.crawl(response.doc('div.page a:nth-last-child(2)').attr.href, callback = self.index_page)
+        self.crawl(response.doc('div.page a:nth-last-child(2)').attr.href, callback = self.index_page, headers = self.headers)
         
     @config(priority=2)
     def detail_page(self, response):
         profile = response.doc('div.o_r_contact ul')
         profile.remove('em')
         
+        img_src = response.doc('div.o_big_img_bg_b img').attr.src
+        file_src_parts = img_src.split('/')
+        file_parent_root = file_src_parts[-2]
+        file_name = file_src_parts[-1]
+		
+        self.headers['User-Agent'] = random.choice(USER_AGENT_LIST)
+        self.crawl(img_src, callback = self.save_img, save={'file_parent_root': file_parent_root, 'file_name': file_name}, headers = {
+            'Accept':"image/webp,image/*,*/*;q=0.8",
+            "Accept-Encoding":"gzip, deflate, sdch",
+            "Cache-Control":"no-cache",
+            "Host":"img.kukan5.com:808",
+            "Pragma":"no-cache",
+            "Proxy-Connection":"keep-alive",
+            "Referer":response.url
+        })
+        
         drama = {
-            "img_src" : response.doc('div.o_big_img_bg_b img').attr.src,
+            "img_src" : file_parent_root + '/' + file_name,
             "title_en" : profile.find('li:nth-child(2)').text(),
             "title_cn" : profile.find('li:nth-child(3)').text(),
             "debut_date" : profile.find('li:nth-child(7)').text(),
@@ -81,13 +114,37 @@ class Handler(BaseHandler):
         self.store(drama)
         return drama
     
-    def store(self, drama):
-        db.dramas.insert_one(drama)
+    def save_img(self, response):
+        file_parent_root = response.save['file_parent_root']
+        self.io_util.mkDir(file_parent_root)
+        file_path = file_parent_root + '/' + response.save['file_name']
+        # print(file_path)
+        self.io_util.save(response.content, file_path)
+		
     
     
-    
-    
-    
-    
-    
-    
+class IOUtil(object):
+    def __init__(self):
+        self.path = DIR_PATH
+        if not self.path.endswith('/'):
+            self.path = self.path + '/'
+        if not os.path.exists(self.path):
+            os.makedirs(self.path)
+
+    def mkDir(self, path):
+        path = path.strip()
+        dir_path = self.path + path
+
+        if not os.path.exists(dir_path):
+            os.makedirs(dir_path)
+
+    def save(self, content, path):
+        absolute_path = self.path + path
+        f = open(absolute_path, 'wb')
+        f.write(content)
+        f.close()
+
+	# 获得链接的后缀名，通过图片 URL 获得
+    def getExtension(self, url):
+        extension = url.split('.')[-1]
+        return extension  

@@ -45,7 +45,7 @@ class Handler(BaseHandler):
         "Host":"www.meijutt.com",
         "Pragma":"no-cache",
         "Referer":"http://www.meijutt.com",
-        "Upgrade-Insecure-Requests":1
+        "Upgrade-Insecure-Requests":"1"
     }
 
     def __init__(self):
@@ -112,7 +112,10 @@ class Handler(BaseHandler):
         }
         
         self.store(drama)
-        return drama
+
+    
+    def store(self, drama):
+        db.dramas.insert_one(drama)
     
     def save_img(self, response):
         file_parent_root = response.save['file_parent_root']
@@ -144,7 +147,6 @@ class IOUtil(object):
         f.write(content)
         f.close()
 
-	# 获得链接的后缀名，通过图片 URL 获得
     def getExtension(self, url):
         extension = url.split('.')[-1]
         return extension  

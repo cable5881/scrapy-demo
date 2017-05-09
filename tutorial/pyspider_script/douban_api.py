@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
-# Created on 2017-04-04 21:27:48
+# Created on 2017-05-09 21:27:48
 # Project: douban_api
 
 from pyspider.libs.base_handler import *
@@ -73,7 +73,9 @@ class Handler(BaseHandler):
         avg_rating = drama_json['rating']['average']
         summary = drama_json['summary']
         douban_url = drama_json['alt']
-        aka = drama_json['aka'][0]
+        aka = None
+        if len(drama_json['aka']) > 0:
+            aka = drama_json['aka'][0]
 
         return Drama(_id=_id, image=image, title_cn=title_cn, title_en=title_en,
                      year=year, episodes=episodes, current_season=current_season,

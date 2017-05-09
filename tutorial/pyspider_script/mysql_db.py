@@ -68,7 +68,5 @@ class MysqlDb(object):
         self.insert_type(drama.id, drama_type_list)
 
         self.commit()
-        self.close()
 
-
-db = MysqlDb()
+# db = MysqlDb()
